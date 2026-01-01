@@ -1,6 +1,7 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "student_portal_db");
+$conn = new mysqli("localhost", "root", "", "if0_40783545_student_portal");
+
 if ($conn->connect_error) {
-    die("Connection failed");
+    die("Connection failed: " . $conn->connect_error);
 }
 ?>
