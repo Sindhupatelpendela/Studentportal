@@ -1,0 +1,8 @@
+{
+    "name": "nrsc/student-portal",
+    "description": "Enterprise Student Portal",
+    "require": {
+        "php": ">=8.0",
+        "ext-mysqli": "*"
+    }
+}
