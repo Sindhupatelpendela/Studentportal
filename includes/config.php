@@ -16,20 +16,21 @@ $db_name = getenv('MYSQLDATABASE') ?: 'nrsc_portal_db';
 $db_port = getenv('MYSQLPORT') ?: 3306;
 
 // 3. AUTO-HEALING CONNECTION ENGINE
-$conn = new mysqli($db_host, $db_user, $db_pass, "", $db_port);
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
 
 if ($conn->connect_error) {
-    die("CRITICAL ERROR: Database Server Unreachable. Please check XAMPP/MySQL.");
-}
-
-// Check if Database Exists, if not -> CREATE IT
-if (!$conn->select_db($db_name)) {
+    // Fallback: Try connecting without DB (Localhost first run scenario)
+    $conn = new mysqli($db_host, $db_user, $db_pass, "", $db_port);
+    if ($conn->connect_error) {
+        die("Connection Failed: " . $conn->connect_error);
+    }
+    // Create DB if not exists
     $conn->query("CREATE DATABASE IF NOT EXISTS $db_name");
     $conn->select_db($db_name);
-    
-    // Auto-Deploy Schema (First Run)
-    deploy_schema($conn);
 }
+
+// ALWAYS ensure tables exist (Fix for Railway Empty DB)
+deploy_schema($conn);
 
 // 4. Schema Deployment System
 function deploy_schema($conn) {
