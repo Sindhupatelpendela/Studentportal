@@ -1,6 +1,8 @@
 <?php
 include "db.php";
 $id = $_GET['id'];
-mysqli_query($conn,"DELETE FROM student WHERE id='$id'");
+$stmt = $conn->prepare("DELETE FROM student WHERE id=?");
+$stmt->bind_param("s", $id);
+$stmt->execute();
 header("Location: dashboard.php");
 ?>

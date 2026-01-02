@@ -1,0 +1,83 @@
+<?php
+// includes/config.php
+// NRSC ENTERPRISE CORE - Auto-Healing Architecture
+
+// 1. Session & Security Policies
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.gc_maxlifetime', 3600); // 1 Hour Session
+session_start();
+
+// 2. Database Configuration
+$db_host = getenv('MYSQLHOST') ?: 'localhost';
+$db_user = getenv('MYSQLUSER') ?: 'root';
+$db_pass = getenv('MYSQLPASSWORD') ?: '';
+$db_name = getenv('MYSQLDATABASE') ?: 'nrsc_portal_db';
+$db_port = getenv('MYSQLPORT') ?: 3306;
+
+// 3. AUTO-HEALING CONNECTION ENGINE
+$conn = new mysqli($db_host, $db_user, $db_pass, "", $db_port);
+
+if ($conn->connect_error) {
+    die("CRITICAL ERROR: Database Server Unreachable. Please check XAMPP/MySQL.");
+}
+
+// Check if Database Exists, if not -> CREATE IT
+if (!$conn->select_db($db_name)) {
+    $conn->query("CREATE DATABASE IF NOT EXISTS $db_name");
+    $conn->select_db($db_name);
+    
+    // Auto-Deploy Schema (First Run)
+    deploy_schema($conn);
+}
+
+// 4. Schema Deployment System
+function deploy_schema($conn) {
+    // A. Users Table (RBAC)
+    $conn->query("CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('admin', 'student') NOT NULL DEFAULT 'student',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP NULL,
+        INDEX(username),
+        INDEX(role)
+    )");
+
+    // B. Student Profiles (Extended Attributes)
+    $conn->query("CREATE TABLE IF NOT EXISTS student_profiles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        full_name VARCHAR(100) NOT NULL,
+        college_id VARCHAR(50) UNIQUE NOT NULL,
+        branch VARCHAR(100),
+        year VARCHAR(20),
+        dob DATE,
+        phone VARCHAR(20),
+        address TEXT,
+        bio TEXT,
+        profile_pic VARCHAR(255) DEFAULT 'default.png',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX(full_name),
+        INDEX(college_id)
+    )");
+
+    // C. Seed Default Admin
+    $admin_pass = password_hash('admin', PASSWORD_DEFAULT);
+    $check = $conn->query("SELECT id FROM users WHERE role='admin' LIMIT 1");
+    if ($check->num_rows == 0) {
+        $conn->query("INSERT INTO users (username, email, password, role) VALUES ('admin', 'admin@nrsc.gov.in', '$admin_pass', 'admin')");
+    }
+}
+
+// 5. Global Helpers
+define('APP_NAME', 'NRSC Enterprise Portal');
+define('APP_VER', '4.5.0');
+
+function sanitize($conn, $input) {
+    return htmlspecialchars(strip_tags(trim($conn->real_escape_string($input))));
+}
+?>

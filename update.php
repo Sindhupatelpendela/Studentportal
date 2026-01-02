@@ -2,16 +2,15 @@
 include "db.php";
 $id = $_GET['id'];
 
-$s = mysqli_fetch_assoc(mysqli_query($conn,"SELECT * FROM student WHERE id='$id'"));
+$stmt = $conn->prepare("SELECT * FROM student WHERE id=?");
+$stmt->bind_param("s", $id);
+$stmt->execute();
+$s = $stmt->get_result()->fetch_assoc();
 
 if (isset($_POST['update'])) {
-    mysqli_query($conn,
-        "UPDATE student SET
-         Name='{$_POST['name']}',
-         Branch='{$_POST['branch']}',
-         year='{$_POST['year']}'
-         WHERE id='$id'"
-    );
+$stmt = $conn->prepare("UPDATE student SET Name=?, Branch=?, year=? WHERE id=?");
+    $stmt->bind_param("ssss", $_POST['name'], $_POST['branch'], $_POST['year'], $id);
+    $stmt->execute();
     header("Location: dashboard.php");
 }
 ?>

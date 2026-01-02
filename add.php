@@ -2,14 +2,9 @@
 include "db.php";
 
 if (isset($_POST['add'])) {
-    mysqli_query($conn,
-        "INSERT INTO student (college_id, Name, Branch, year)
-         VALUES (
-         '{$_POST['college_id']}',
-         '{$_POST['name']}',
-         '{$_POST['branch']}',
-         '{$_POST['year']}')"
-    );
+$stmt = $conn->prepare("INSERT INTO student (college_id, Name, Branch, year) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $_POST['college_id'], $_POST['name'], $_POST['branch'], $_POST['year']);
+    $stmt->execute();
     header("Location: dashboard.php");
 }
 ?>
