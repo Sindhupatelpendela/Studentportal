@@ -1,69 +1,105 @@
 <?php
 // includes/config.php
-// NRSC ENTERPRISE CORE - Auto-Healing Architecture
+// NRSC ENTERPRISE CORE - Version 5.0 (Final Robust)
 
-// 1. Session & Debugging
+// 1. Session & Error Reporting
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // TEMPORARY: For Debugging Railway
+ini_set('display_errors', 1);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.gc_maxlifetime', 3600);
 session_start();
 
-// 2. Database Configuration
-// 2. Database Configuration
-// 2. Database Configuration
-$db_host = getenv('MYSQLHOST') ?: 'localhost';
-$db_user = getenv('MYSQLUSER') ?: 'root';
-$db_pass = getenv('MYSQLPASSWORD') ?: '';
-$db_name = getenv('MYSQLDATABASE') ?: 'nrsc_portal_db';
-$db_port = getenv('MYSQLPORT') ?: 3306;
+// 2. Database Configuration Logic
+// Priority: MYSQL_PUBLIC_URL > MYSQL_URL > Individual Variables
 
-if (getenv('MYSQL_PUBLIC_URL')) {
-    $url = parse_url(getenv('MYSQL_PUBLIC_URL'));
-    $db_host = $url['host'];
-    $db_user = $url['user'];
-    $db_pass = $url['pass'];
-    $db_name = ltrim($url['path'], '/');
-    $db_port = $url['port'];
+$db_host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$db_name = 'nrsc_portal_db';
+$db_port = 3306;
+
+// Helper to parse connection string
+function parse_db_url($url_string) {
+    if (!$url_string) return null;
+    $p = parse_url($url_string);
+    return [
+        'host' => $p['host'] ?? null,
+        'user' => $p['user'] ?? null,
+        'pass' => $p['pass'] ?? null,
+        'name' => ltrim($p['path'] ?? '', '/'),
+        'port' => $p['port'] ?? 3306
+    ];
 }
 
-// 3. AUTO-HEALING CONNECTION ENGINE
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT); // Throw exceptions instead of warnings
+// Logic to determine best credentials
+if ($p = parse_db_url(getenv('MYSQL_PUBLIC_URL'))) {
+    // 1. Public Proxy (Best for reliability)
+    extract($p, EXTR_PREFIX_ALL, 'db');
+} elseif ($p = parse_db_url(getenv('MYSQL_URL'))) {
+    // 2. Internal Connection String
+    extract($p, EXTR_PREFIX_ALL, 'db');
+} else {
+    // 3. Individual Env Vars (Fallback)
+    if (getenv('MYSQLHOST')) $db_host = getenv('MYSQLHOST');
+    if (getenv('MYSQLUSER')) $db_user = getenv('MYSQLUSER');
+    if (getenv('MYSQLPASSWORD')) $db_pass = getenv('MYSQLPASSWORD');
+    if (getenv('MYSQLDATABASE')) $db_name = getenv('MYSQLDATABASE');
+    if (getenv('MYSQLPORT')) $db_port = getenv('MYSQLPORT');
+}
+
+// 3. Connect Engine
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
-    // Attempt standard connection
-    $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, $db_port);
+    // Initialize Object
+    $conn = mysqli_init();
     
-} catch (mysqli_sql_exception $e) {
-    // If connection failed...
-    try {
-        // Fallback: Try connecting without DB (Localhost setup mode)
-        $conn = new mysqli($db_host, $db_user, $db_pass, "", $db_port);
-        
-        // Only try to create DB if on Localhost (Cloud users usually can't)
-        if ($db_host == 'localhost' || $db_host == '127.0.0.1') {
-            $conn->query("CREATE DATABASE IF NOT EXISTS $db_name");
-            $conn->select_db($db_name);
-        } else {
-            // On Cloud: If we can't connect to specific DB, it's a fatal config error
-            die("<h1>Cloud Database Error</h1><p>Could not connect to database '$db_name'. Check your Railway Variables.</p><pre>".$e->getMessage()."</pre>");
-        }
-    } catch (Exception $ex) {
-         die("<h1>Fatal Connection Error</h1><p>Please check database credentials.</p><pre>".$ex->getMessage()."</pre>");
+    // Set Timout Options (Fix for 'Gone Away')
+    $conn->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+    
+    // Connect
+    @$conn->real_connect($db_host, $db_user, $db_pass, $db_name, (int)$db_port);
+    
+    if ($conn->connect_error) {
+        throw new Exception($conn->connect_error);
     }
-}
 
-// Ensure schema exists
-try {
-    deploy_schema($conn);
 } catch (Exception $e) {
-    die("<h1>Schema Deployment Failed</h1><pre>".$e->getMessage()."</pre>");
+    // ERROR HANDLER (Clean HTML Output)
+    $safe_host = htmlspecialchars($db_host);
+    $safe_port = htmlspecialchars($db_port);
+    
+    die("
+    <div style='font-family: sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; border: 1px solid #ccc; border-radius: 8px; margin-top: 50px;'>
+        <h2 style='color: #de350b; margin-top: 0;'>Connection Failed</h2>
+        <p>Could not connect to database server.</p>
+        <div style='background: #f4f5f7; padding: 1rem; border-radius: 4px; font-family: monospace;'>
+            Target: <strong>$safe_host</strong> : <strong>$safe_port</strong><br>
+            Error: " . $e->getMessage() . "
+        </div>
+        <p style='margin-top: 1rem; font-size: 0.9rem; color: #666;'>
+            <strong>Troubleshooting:</strong><br>
+            1. If using Railway, ensure <code>MYSQL_PUBLIC_URL</code> is set in variables.<br>
+            2. Check if the database service is running.<br>
+            3. Verify the public proxy port is correct.
+        </p>
+    </div>
+    ");
 }
 
-// 4. Schema Deployment System
+// 4. Schema Deployment (Only runs if tables are missing)
+try {
+    $tbl_check = $conn->query("SHOW TABLES LIKE 'users'");
+    if ($tbl_check->num_rows == 0) {
+        deploy_schema($conn);
+    }
+} catch (Exception $e) {
+    // Silent fail on schema check to avoid crashing if DB is read-only
+}
+
+// 5. Schema Definition
 function deploy_schema($conn) {
-    // A. Users Table (RBAC)
     $conn->query("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
@@ -71,12 +107,9 @@ function deploy_schema($conn) {
         password VARCHAR(255) NOT NULL,
         role ENUM('admin', 'student') NOT NULL DEFAULT 'student',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_login TIMESTAMP NULL,
-        INDEX(username),
-        INDEX(role)
+        last_login TIMESTAMP NULL
     )");
 
-    // B. Student Profiles (Extended Attributes)
     $conn->query("CREATE TABLE IF NOT EXISTS student_profiles (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL UNIQUE,
@@ -90,23 +123,15 @@ function deploy_schema($conn) {
         bio TEXT,
         profile_pic VARCHAR(255) DEFAULT 'default.png',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX(full_name),
-        INDEX(college_id)
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )");
 
-    // C. Seed Default Admin
+    // Determine Admin Pass (Only if creating new)
     $admin_pass = password_hash('admin', PASSWORD_DEFAULT);
-    $check = $conn->query("SELECT id FROM users WHERE role='admin' LIMIT 1");
-    if ($check->num_rows == 0) {
-        $conn->query("INSERT INTO users (username, email, password, role) VALUES ('admin', 'admin@nrsc.gov.in', '$admin_pass', 'admin')");
-    }
+    $conn->query("INSERT IGNORE INTO users (username, email, password, role) VALUES ('admin', 'admin@nrsc.gov.in', '$admin_pass', 'admin')");
 }
 
-// 5. Global Helpers
-define('APP_NAME', 'NRSC Enterprise Portal');
-define('APP_VER', '4.5.0');
-
+// Global Helpers
 function sanitize($conn, $input) {
     return htmlspecialchars(strip_tags(trim($conn->real_escape_string($input))));
 }
