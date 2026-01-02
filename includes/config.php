@@ -11,11 +11,22 @@ ini_set('session.gc_maxlifetime', 3600);
 session_start();
 
 // 2. Database Configuration
+// 2. Database Configuration
 $db_host = getenv('MYSQLHOST') ?: 'localhost';
 $db_user = getenv('MYSQLUSER') ?: 'root';
 $db_pass = getenv('MYSQLPASSWORD') ?: '';
 $db_name = getenv('MYSQLDATABASE') ?: 'nrsc_portal_db';
 $db_port = getenv('MYSQLPORT') ?: 3306;
+
+// Smart Fallback: If individual vars are missing, try the "Magic Link" (MYSQL_URL)
+if ($db_host == 'localhost' && getenv('MYSQL_URL')) {
+    $url = parse_url(getenv('MYSQL_URL'));
+    $db_host = $url['host'];
+    $db_user = $url['user'];
+    $db_pass = $url['pass'];
+    $db_name = ltrim($url['path'], '/');
+    $db_port = $url['port'];
+}
 
 // 3. AUTO-HEALING CONNECTION ENGINE
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT); // Throw exceptions instead of warnings
