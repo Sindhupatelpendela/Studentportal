@@ -4,6 +4,10 @@ ini_set('display_errors', 1);
 
 echo "<h1>Railway Diagnostic Tool</h1>";
 
+if (!extension_loaded('mysqli')) {
+    die("<h2 style='color:red'>CRITICAL ERROR: MySQLi Extension NOT loaded.</h2><p>Railway is not using your Dockerfile. <br>Go to Railway > Settings > Build > Builder and select 'Dockerfile'.</p>");
+}
+
 $host = getenv('MYSQLHOST');
 $user = getenv('MYSQLUSER');
 $pass = getenv('MYSQLPASSWORD');
