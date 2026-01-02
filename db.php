@@ -1,5 +1,10 @@
 <?php
-$conn = new mysqli("localhost", "root", "", "student_portal_db");
+$host = getenv('DB_HOST') ?: "localhost";
+$user = getenv('DB_USER') ?: "root";
+$pass = getenv('DB_PASS') ?: "";
+$db   = getenv('DB_NAME') ?: "student_portal_db";
+
+$conn = new mysqli($host, $user, $pass, $db);
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
