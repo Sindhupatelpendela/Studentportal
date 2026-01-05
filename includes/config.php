@@ -12,8 +12,9 @@ session_start();
 // ========================================
 // AUTOMATIC RAILWAY CONFIG
 // Since standard env vars are failingDNS resolution, we parse the full connection URL if available.
-if (getenv('MYSQL_URL')) {
-    $url = parse_url(getenv('MYSQL_URL'));
+if (getenv('MYSQL_URL') || getenv('Use_Public_URL')) {
+    $url_string = getenv('MYSQL_URL') ?: getenv('Use_Public_URL');
+    $url = parse_url($url_string);
     $db_host = $url["host"];
     $db_user = $url["user"];
     $db_pass = $url["pass"];
