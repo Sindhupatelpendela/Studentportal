@@ -18,6 +18,7 @@ $db_user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: "root";
 $db_pass = getenv('DB_PASS') ?: getenv('MYSQLPASSWORD') ?: "";
 $db_name = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: "student_portal_db";
 $db_port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
+if (empty($db_port)) $db_port = 3306;
 // ========================================
 
 // Connect to Database
