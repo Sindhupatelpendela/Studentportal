@@ -17,7 +17,7 @@ if (getenv('MYSQL_URL')) {
     $db_host = $url["host"];
     $db_user = $url["user"];
     $db_pass = $url["pass"];
-    $db_name = substr($url["path"], 1);
+    $db_name = ltrim($url["path"], '/');
     $db_port = $url["port"];
 } else {
     // Fallback to manual variables
