@@ -10,14 +10,24 @@ session_start();
 // DATABASE CONFIGURATION
 // Fill in YOUR InfinityFree credentials below:
 // ========================================
-// 1. Try "DB_" vars (Custom/Manual)
-// 2. Try "MYSQL" vars (Railway/Docker default)
-// 3. Fallback to Localhost (XAMPP/Local)
-$db_host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: "localhost";
-$db_user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: "root";
-$db_pass = getenv('DB_PASS') ?: getenv('MYSQLPASSWORD') ?: "";
-$db_name = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: "student_portal_db";
-$db_port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
+// AUTOMATIC RAILWAY CONFIG
+// Since standard env vars are failingDNS resolution, we parse the full connection URL if available.
+if (getenv('MYSQL_URL')) {
+    $url = parse_url(getenv('MYSQL_URL'));
+    $db_host = $url["host"];
+    $db_user = $url["user"];
+    $db_pass = $url["pass"];
+    $db_name = substr($url["path"], 1);
+    $db_port = $url["port"];
+} else {
+    // Fallback to manual variables
+    $db_host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: "localhost";
+    $db_user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: "root";
+    $db_pass = getenv('DB_PASS') ?: getenv('MYSQLPASSWORD') ?: "";
+    $db_name = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: "student_portal_db";
+    $db_port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
+}
+
 if (empty($db_port)) $db_port = 3306;
 // ========================================
 
