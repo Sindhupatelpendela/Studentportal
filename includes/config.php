@@ -10,14 +10,15 @@ session_start();
 // DATABASE CONFIGURATION
 // Fill in YOUR InfinityFree credentials below:
 // ========================================
-$db_host = 'sql306.epizy.com';     // Your MySQL hostname from InfinityFree
-$db_user = 'epiz_XXXXXXXX';        // Your MySQL username
-$db_pass = 'YOUR_PASSWORD_HERE';   // Your MySQL password
-$db_name = 'epiz_XXXXXXXX_portal'; // Your database name
+$db_host = getenv('DB_HOST') ?: "localhost";
+$db_user = getenv('DB_USER') ?: "root";
+$db_pass = getenv('DB_PASS') ?: "";
+$db_name = getenv('DB_NAME') ?: "student_portal_db";
+$db_port = getenv('DB_PORT') ?: 3306;
 // ========================================
 
 // Connect to Database
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name, (int)$db_port);
 
 if ($conn->connect_error) {
     die("

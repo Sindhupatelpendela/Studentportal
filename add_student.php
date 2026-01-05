@@ -1,21 +1,44 @@
 <?php
 require_once "includes/config.php";
 
-if (!isset($_SESSION['admin'])) {
-    header("Location: login.php");
-    exit;
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
+    if(!isset($_SESSION['admin'])) { header("Location: login.php"); exit; }
 }
 
 $message = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $stmt = $conn->prepare("INSERT INTO student (college_id, Name, College, Branch, year) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $_POST['college_id'], $_POST['name'], $_POST['college'], $_POST['branch'], $_POST['year']);
+    // 1. Data Collection
+    $name = trim($_POST['name']);
+    $college_id = trim($_POST['college_id']);
+    $branch = $_POST['branch'];
+    $year = $_POST['year'];
     
-    if ($stmt->execute()) {
-        header("Location: dashboard.php");
-        exit;
-    } else {
-        $message = "Error: " . $conn->error;
+    // Auto-generate username (based on college ID) and password (default: 123456)
+    $username = strtolower(str_replace(' ', '', $college_id));
+    $raw_password = "password123"; 
+    $password = password_hash($raw_password, PASSWORD_DEFAULT);
+    $email = $username . "@student.nrsc.gov.in"; // Dummy email generation
+
+    $conn->begin_transaction();
+    try {
+        // 2. Create User Account
+        $stmt = $conn->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'student')");
+        $stmt->bind_param("sss", $username, $email, $password);
+        if (!$stmt->execute()) {
+            throw new Exception("Username or Email already exists.");
+        }
+        $user_id = $conn->insert_id;
+
+        // 3. Create Student Profile
+        $stmt = $conn->prepare("INSERT INTO student_profiles (user_id, full_name, college_id, branch, year) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("issss", $user_id, $name, $college_id, $branch, $year);
+        $stmt->execute();
+
+        $conn->commit();
+        $message = "Student created successfully! Credentials: $username / $raw_password";
+    } catch (Exception $e) {
+        $conn->rollback();
+        $message = "Error: " . $e->getMessage();
     }
 }
 ?>

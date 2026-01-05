@@ -152,7 +152,7 @@ if (!$student) {
                             Removing a student record is irreversible. Their login access will be revoked immediately.
                         </p>
                         <form action="delete_student.php" method="GET" onsubmit="return confirm('CRITICAL WARNING: Are you sure you want to delete this student data?');">
-                            <input type="hidden" name="id" value="<?= $student['college_id'] ?>"> <!-- Assuming legacy delete expects ID string -->
+                            <input type="hidden" name="id" value="<?= $student['user_id'] ?>"> <!-- Assuming legacy delete expects ID string -->
                             <button class="btn btn-outline" style="width: 100%; color: var(--danger-text); border-color: var(--danger-text);">Delete Student Record</button>
                         </form>
                     </div>
