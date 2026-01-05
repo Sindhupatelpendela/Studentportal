@@ -20,7 +20,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] == 'student') {
             <div class="auth-message">
                 <h1 style="font-size: 3rem; margin-bottom: 1rem;">NRSC Portal</h1>
                 <p style="font-size: 1.25rem; opacity: 0.9;">Secure access for students and faculty. Manage your academic profile with ease and reliable uptime.</p>
-                <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">&copy; 2024 National Remote Sensing Centre</div>
+                <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">&copy; 2026 National Remote Sensing Centre</div>
             </div>
         </div>
 

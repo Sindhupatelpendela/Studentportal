@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                         <div class="form-group">
                             <label class="form-label">College ID <span style="color: var(--danger)">*</span></label>
-                            <input name="college_id" class="form-control" placeholder="e.g. STU-2024-001" required>
+                            <input name="college_id" class="form-control" placeholder="e.g. STU-2026-001" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Full Name <span style="color: var(--danger)">*</span></label>

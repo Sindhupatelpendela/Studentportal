@@ -122,7 +122,7 @@ $profile = $conn->query("SELECT * FROM student_profiles WHERE user_id=$user_id")
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Current Year</label>
-                                <input name="year" class="form-control" value="<?= htmlspecialchars($profile['year'] ?? '') ?>" placeholder="e.g. 2024-2025" required>
+                                <input name="year" class="form-control" value="<?= htmlspecialchars($profile['year'] ?? '') ?>" placeholder="e.g. 2026-2027" required>
                             </div>
                         </div>
 
