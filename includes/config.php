@@ -10,11 +10,14 @@ session_start();
 // DATABASE CONFIGURATION
 // Fill in YOUR InfinityFree credentials below:
 // ========================================
-$db_host = getenv('DB_HOST') ?: "localhost";
-$db_user = getenv('DB_USER') ?: "root";
-$db_pass = getenv('DB_PASS') ?: "";
-$db_name = getenv('DB_NAME') ?: "student_portal_db";
-$db_port = getenv('DB_PORT') ?: 3306;
+// 1. Try "DB_" vars (Custom/Manual)
+// 2. Try "MYSQL" vars (Railway/Docker default)
+// 3. Fallback to Localhost (XAMPP/Local)
+$db_host = getenv('DB_HOST') ?: getenv('MYSQLHOST') ?: "localhost";
+$db_user = getenv('DB_USER') ?: getenv('MYSQLUSER') ?: "root";
+$db_pass = getenv('DB_PASS') ?: getenv('MYSQLPASSWORD') ?: "";
+$db_name = getenv('DB_NAME') ?: getenv('MYSQLDATABASE') ?: "student_portal_db";
+$db_port = getenv('DB_PORT') ?: getenv('MYSQLPORT') ?: 3306;
 // ========================================
 
 // Connect to Database
