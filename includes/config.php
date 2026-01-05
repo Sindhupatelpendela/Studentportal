@@ -32,6 +32,8 @@ if (empty($db_port)) $db_port = 3306;
 // ========================================
 
 // Connect to Database
+// DEBUG: Uncomment to see what host is actually being used
+// echo "DEBUG: Host: $db_host | Port: $db_port<br>";
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name, (int)$db_port);
 
 if ($conn->connect_error) {
